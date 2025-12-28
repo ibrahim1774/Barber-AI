@@ -1,0 +1,49 @@
+
+import React, { useState } from 'react';
+import { AppState, ShopInputs, WebsiteData } from './types';
+import { Dashboard } from './components/Dashboard';
+import { LoadingScreen } from './components/LoadingScreen';
+import { GeneratedWebsite } from './components/GeneratedWebsite';
+import { generateContent } from './services/geminiService';
+
+const App: React.FC = () => {
+  const [state, setState] = useState<AppState>('dashboard');
+  const [generatedData, setGeneratedData] = useState<WebsiteData | null>(null);
+
+  const handleGenerate = async (inputs: ShopInputs) => {
+    setState('loading');
+    try {
+      const data = await generateContent(inputs);
+      setGeneratedData(data);
+      setState('generated');
+    } catch (error: any) {
+      console.error("Failed to generate website:", error);
+      
+      // If the request fails with this specific message, prompt for API key selection again
+      if (error.message?.includes("Requested entity was not found.") && window.aistudio) {
+        await window.aistudio.openSelectKey();
+      } else {
+        alert("Something went wrong during generation. Please try again.");
+      }
+      
+      setState('dashboard');
+    }
+  };
+
+  const handleBack = () => {
+    setState('dashboard');
+    setGeneratedData(null);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0d0d0d]">
+      {state === 'dashboard' && <Dashboard onGenerate={handleGenerate} />}
+      {state === 'loading' && <LoadingScreen />}
+      {state === 'generated' && generatedData && (
+        <GeneratedWebsite data={generatedData} onBack={handleBack} />
+      )}
+    </div>
+  );
+};
+
+export default App;
