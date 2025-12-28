@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { ShopInputs, WebsiteData } from "../types";
+import { ShopInputs, WebsiteData } from "../types.ts";
 
 /**
  * Generates an image using Gemini 2.5 Flash Image with retry logic.
@@ -126,8 +126,6 @@ export const generateContent = async (inputs: ShopInputs): Promise<WebsiteData> 
     if (imgData) {
       imageUrls.push(imgData);
     } else {
-      // If generation fails completely after retries, we use the first successful image as a placeholder 
-      // instead of a broken icon or external link, but we aim for 8 unique ones.
       imageUrls.push(imageUrls[0] || "");
     }
     // Respect rate limits for image generation
