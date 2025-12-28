@@ -39,15 +39,9 @@ const generateImageWithRetry = async (ai: any, prompt: string, retries = 2): Pro
 };
 
 export const generateContent = async (inputs: ShopInputs): Promise<WebsiteData> => {
-  const apiKey = process.env.API_KEY;
-  
-  // Guard against missing API Key before SDK initialization
-  if (!apiKey || apiKey === "undefined" || apiKey === "") {
-    throw new Error("API_KEY_MISSING");
-  }
-
-  // Create instance right before use
-  const ai = new GoogleGenAI({ apiKey });
+  // Initialize inside the function to pick up the latest state (e.g. if a key was just selected via bridge)
+  // The SDK will automatically look for process.env.API_KEY if we pass it here.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   // 1. Generate Text Content using Gemini 3 Flash
   const textResponse = await ai.models.generateContent({
