@@ -31,7 +31,6 @@ const generateImageWithRetry = async (ai: any, prompt: string, retries = 2): Pro
     } catch (error) {
       console.warn(`Image generation failed for prompt: "${prompt}". Attempt ${i + 1}`, error);
       if (i < retries - 1) {
-        // Wait longer between retries to avoid rate limits
         await new Promise(resolve => setTimeout(resolve, 3000));
       }
     }
@@ -40,8 +39,15 @@ const generateImageWithRetry = async (ai: any, prompt: string, retries = 2): Pro
 };
 
 export const generateContent = async (inputs: ShopInputs): Promise<WebsiteData> => {
-  // Always create a new instance right before making an API call to ensure it uses the latest key.
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+  const apiKey = process.env.API_KEY;
+  
+  // Guard against missing API Key before SDK initialization
+  if (!apiKey || apiKey === "undefined" || apiKey === "") {
+    throw new Error("API_KEY_MISSING");
+  }
+
+  // Create instance right before use
+  const ai = new GoogleGenAI({ apiKey });
 
   // 1. Generate Text Content using Gemini 3 Flash
   const textResponse = await ai.models.generateContent({
@@ -106,30 +112,22 @@ export const generateContent = async (inputs: ShopInputs): Promise<WebsiteData> 
   const content = JSON.parse(textResponse.text || '{}');
 
   // 2. Generate 8 Unique Images using Gemini 2.5 Flash Image
-  // We specify aspect ratios in the prompt and config to match website sections
   const imagePrompts = [
-    `Cinematic, high-end hero image of a master barber in a luxury shop in ${inputs.area}, moody atmosphere, professional photography, dark wood and gold accents, 16:9`,
-    `Elegantly styled interior of a boutique barbershop called ${inputs.shopName}, leather vintage chairs, marble floors, soft warm lighting, 4:3`,
-    `Close-up of premium gold-plated barber scissors and a silver straight razor on a clean marble surface, high luxury grooming tools, 1:1`,
-    `A sharp, professional skin fade haircut on a client at ${inputs.shopName}, clean edges, detailed texture, professional salon shot, 1:1`,
-    `A master barber applying warm lather to a client with a silver shaving brush, luxury grooming ritual, 1:1`,
-    `Modern masculine hair styling session at ${inputs.shopName}, dynamic movement, luxury products, artistic lighting, 1:1`,
-    `Artistic close-up of a barber's hands using a straight razor for a precise beard lineup, high contrast, professional focus, 1:1`,
-    `The sophisticated entrance of ${inputs.shopName} in ${inputs.area}, architectural detail, premium brand logo on black window, 1:1`,
+    `Cinematic hero image of a barber in a luxury shop in ${inputs.area}, moody atmosphere, professional photography, 16:9`,
+    `Styled interior of ${inputs.shopName}, leather vintage chairs, marble floors, soft lighting, 4:3`,
+    `Close-up of premium gold-plated barber scissors and a silver straight razor, 1:1`,
+    `A sharp skin fade haircut at ${inputs.shopName}, clean edges, 1:1`,
+    `A barber applying warm lather with a silver brush, luxury ritual, 1:1`,
+    `Modern masculine hair styling session at ${inputs.shopName}, dynamic movement, 1:1`,
+    `Close-up of barber's hands using a straight razor for precision beard lineup, 1:1`,
+    `Sophisticated entrance of ${inputs.shopName} in ${inputs.area}, architectural detail, 1:1`,
   ];
 
   const imageUrls: string[] = [];
-  
-  // Sequential generation with delay to ensure all images are unique and high-quality
   for (const prompt of imagePrompts) {
     const imgData = await generateImageWithRetry(ai, prompt);
-    if (imgData) {
-      imageUrls.push(imgData);
-    } else {
-      imageUrls.push(imageUrls[0] || "");
-    }
-    // Respect rate limits for image generation
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    imageUrls.push(imgData || imageUrls[0] || "");
+    await new Promise(resolve => setTimeout(resolve, 1000));
   }
 
   const serviceIcons: ('scissors' | 'razor' | 'mustache' | 'face')[] = ['scissors', 'razor', 'mustache', 'face'];
@@ -139,13 +137,13 @@ export const generateContent = async (inputs: ShopInputs): Promise<WebsiteData> 
     area: inputs.area,
     phone: inputs.phone,
     hero: {
-      heading: content.hero?.heading || `${inputs.shopName}: Premium Grooming in ${inputs.area}`,
-      tagline: content.hero?.tagline || "Experience the Ultimate Sharp Look",
+      heading: content.hero?.heading || `${inputs.shopName} in ${inputs.area}`,
+      tagline: content.hero?.tagline || "Elite Grooming Standards",
       imageUrl: imageUrls[0],
     },
     about: {
-      heading: content.about?.heading || "Crafting Excellence",
-      description: content.about?.paragraphs || ["Our shop is dedicated to the art of traditional barbering and modern style."],
+      heading: content.about?.heading || "The Artisan Standard",
+      description: content.about?.paragraphs || ["Dedicated to traditional craft and modern style."],
       imageUrl: imageUrls[1],
     },
     services: (content.services || []).map((s: any, i: number) => ({

@@ -13,8 +13,6 @@ const App: React.FC = () => {
   const handleGenerate = async (inputs: ShopInputs) => {
     setState('loading');
     try {
-      // Attempt generation. If process.env.API_KEY is missing or invalid, 
-      // the error will be caught in the block below.
       const data = await generateContent(inputs);
       setGeneratedData(data);
       setState('generated');
@@ -23,18 +21,22 @@ const App: React.FC = () => {
       
       const msg = error.message || "";
       
-      // Handle the case where a user needs to pick a key via the AI Studio dialog
-      if (msg.includes("Requested entity was not found.") && window.aistudio) {
+      // If the service reported a missing key, try to use the interactive bridge
+      if (msg === "API_KEY_MISSING" || msg.includes("API Key must be set")) {
+        if (window.aistudio) {
+          await window.aistudio.openSelectKey();
+          // We don't alert here, assuming the user will retry after selecting a key
+          setState('dashboard');
+          return;
+        } else {
+          alert("Configuration Error: The 'API_KEY' environment variable is not accessible to the browser. If you added it to Vercel, please ensure you prefixed it with VITE_ or that your deployment has been rebuilt.");
+        }
+      } else if (msg.includes("Requested entity was not found.") && window.aistudio) {
         await window.aistudio.openSelectKey();
-        setState('dashboard');
-        return;
-      }
-
-      // Provide helpful feedback if the API call fails
-      if (msg.includes("API key") || error.status === 403 || error.status === 401) {
-        alert("Authentication Error: There was an issue with your API Key. If you just added it to Vercel, make sure you redeployed the app so the changes take effect.");
+      } else if (error.status === 403 || error.status === 401) {
+        alert("Authentication Error: The provided API Key is invalid or expired.");
       } else {
-        alert(`Generation Error: ${msg || "An unexpected error occurred. Please try again."}`);
+        alert(`Generation Error: ${msg || "An unexpected error occurred."}`);
       }
       
       setState('dashboard');
