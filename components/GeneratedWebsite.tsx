@@ -1,11 +1,10 @@
 
 import React, { useEffect, useState } from 'react';
 import { WebsiteData } from '../types';
-import {
-  ScissorsIcon, RazorIcon, MustacheIcon, FaceIcon,
-  MapPinIcon, AwardIcon, ClockIcon, PhoneIcon, MailIcon
+import { 
+  ScissorsIcon, RazorIcon, MustacheIcon, FaceIcon, 
+  MapPinIcon, AwardIcon, ClockIcon, PhoneIcon, MailIcon 
 } from './Icons';
-import { generateHTML } from '../services/htmlGenerator';
 
 interface GeneratedWebsiteProps {
   data: WebsiteData;
@@ -31,27 +30,6 @@ export const GeneratedWebsite: React.FC<GeneratedWebsiteProps> = ({ data, onBack
     }
   };
 
-  const handleClaimWebsite = async () => {
-    // Generate HTML on client side
-    const htmlContent = generateHTML(data);
-
-    // Deploy to GitHub silently in the background
-    fetch('/api/deploy', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        shopName: data.shopName,
-        htmlContent: htmlContent
-      })
-    }).catch(err => {
-      console.error('Background deployment failed:', err);
-      // Continue to Stripe even if deployment fails
-    });
-
-    // Immediately redirect to Stripe payment (don't wait for deployment)
-    window.open('https://buy.stripe.com/8x2bJ0eCo8yGgrE8Ym3cc05', '_blank');
-  };
-
   const formattedPhone = data.phone.replace(/\s+/g, '');
 
   return (
@@ -69,32 +47,21 @@ export const GeneratedWebsite: React.FC<GeneratedWebsiteProps> = ({ data, onBack
             
             <a 
               href={`tel:${formattedPhone}`} 
-              className="flex items-center gap-2 md:gap-4 text-[#f4a100] border-l-2 border-white/20 pl-4 md:pl-8 hover:text-white transition-colors"
+              className="flex items-center gap-2 md:gap-4 text-[#f4a100] border-l-2 border-white/20 pl-4 md:pl-8 hover:text-white transition-colors hidden sm:flex"
             >
               <PhoneIcon className="w-5 h-5 md:w-7 md:h-7" />
               <span className="text-sm md:text-xl lg:text-2xl font-bold tracking-tight">{data.phone}</span>
             </a>
           </div>
 
-          <nav className="flex items-center gap-4 md:gap-10">
-            <div className="hidden lg:flex items-center gap-10">
-              {['HOME', 'SERVICES', 'CONTACT'].map(item => (
-                <a
-                  key={item}
-                  href={`#${item.toLowerCase().replace(' ', '-')}`}
-                  className="text-[12px] font-montserrat font-bold tracking-[2px] hover:text-[#f4a100] transition-colors"
-                >
-                  {item}
-                </a>
-              ))}
-            </div>
-            <button
+          <div className="flex items-center">
+            <button 
               onClick={onBack}
               className="px-4 py-2 md:px-7 md:py-3 border-2 border-[#f4a100] text-[#f4a100] text-[10px] md:text-[13px] font-black uppercase tracking-widest hover:bg-[#f4a100] hover:text-[#1a1a1a] transition-all"
             >
               BACK
             </button>
-          </nav>
+          </div>
         </div>
       </header>
 
@@ -265,45 +232,41 @@ export const GeneratedWebsite: React.FC<GeneratedWebsiteProps> = ({ data, onBack
 
       {/* Contact Section */}
       <section id="contact-us" className="py-12 md:py-32 bg-[#0d0d0d] px-4 md:px-6">
-        <div className="container mx-auto flex flex-col lg:flex-row max-w-6xl shadow-2xl overflow-hidden bg-[#1a1a1a]">
-          <div className="lg:w-1/2 p-8 md:p-20 flex flex-col justify-center bg-[#1a1a1a]">
-            <h2 className="text-2xl md:text-4xl font-montserrat font-black text-white mb-8 md:mb-12 uppercase tracking-[2px]">Contact Us</h2>
-            <div className="space-y-6 md:space-y-10">
-              <div className="flex gap-4 md:gap-6">
-                <MapPinIcon className="w-5 h-5 md:w-6 md:h-6 text-[#f4a100] shrink-0" />
+        <div className="container mx-auto max-w-4xl shadow-2xl overflow-hidden bg-[#1a1a1a]">
+          <div className="w-full p-8 md:p-20 flex flex-col items-center text-center bg-[#1a1a1a]">
+            <h2 className="text-2xl md:text-4xl font-montserrat font-black text-white mb-8 md:mb-12 uppercase tracking-[2px]">Visit Us</h2>
+            <div className="grid md:grid-cols-3 gap-8 md:gap-12 w-full">
+              <div className="flex flex-col items-center gap-4">
+                <MapPinIcon className="w-8 h-8 text-[#f4a100]" />
                 <div>
-                  <h4 className="text-[#f4a100] font-bold text-[10px] md:text-xs tracking-[2px] mb-1 md:mb-2 font-montserrat">ADDRESS</h4>
+                  <h4 className="text-[#f4a100] font-bold text-[10px] md:text-xs tracking-[2px] mb-2 font-montserrat uppercase">Location</h4>
                   <p className="text-[#cccccc] text-xs md:text-sm leading-relaxed">{data.contact.address}</p>
                 </div>
               </div>
-              <a href={`tel:${formattedPhone}`} className="flex gap-4 md:gap-6 group">
-                <PhoneIcon className="w-5 h-5 md:w-6 md:h-6 text-[#f4a100] shrink-0 group-hover:scale-110 transition-transform" />
+              <a href={`tel:${formattedPhone}`} className="flex flex-col items-center gap-4 group">
+                <PhoneIcon className="w-8 h-8 text-[#f4a100] group-hover:scale-110 transition-transform" />
                 <div>
-                  <h4 className="text-[#f4a100] font-bold text-[10px] md:text-xs tracking-[2px] mb-1 md:mb-2 font-montserrat">PHONE</h4>
+                  <h4 className="text-[#f4a100] font-bold text-[10px] md:text-xs tracking-[2px] mb-2 font-montserrat uppercase">Phone</h4>
                   <p className="text-[#cccccc] text-xs md:text-sm leading-relaxed group-hover:text-white transition-colors">{data.phone}</p>
                 </div>
               </a>
-              <div className="flex gap-4 md:gap-6">
-                <MailIcon className="w-5 h-5 md:w-6 md:h-6 text-[#f4a100] shrink-0" />
+              <div className="flex flex-col items-center gap-4">
+                <MailIcon className="w-8 h-8 text-[#f4a100]" />
                 <div>
-                  <h4 className="text-[#f4a100] font-bold text-[10px] md:text-xs tracking-[2px] mb-1 md:mb-2 font-montserrat">EMAIL</h4>
+                  <h4 className="text-[#f4a100] font-bold text-[10px] md:text-xs tracking-[2px] mb-2 font-montserrat uppercase">Email</h4>
                   <p className="text-[#cccccc] text-xs md:text-sm leading-relaxed">{data.contact.email}</p>
                 </div>
               </div>
             </div>
-          </div>
-          
-          <div className="lg:w-1/2 p-8 md:p-20 bg-[#0d0d0d] flex flex-col justify-center border-t lg:border-t-0 lg:border-l border-white/5">
-            <span className="text-[#f4a100] text-[10px] md:text-xs font-bold tracking-[4px] uppercase mb-3 font-montserrat opacity-80">Get In Touch</span>
-            <h2 className="text-xl md:text-3xl font-montserrat font-black text-white mb-6 md:mb-10 tracking-[2px] uppercase">Send a Message</h2>
-            <form className="space-y-4 md:space-y-6">
-              <input type="text" placeholder="Your Name" className="w-full bg-transparent border-b border-white/20 py-2 md:py-4 outline-none focus:border-[#f4a100] transition-colors text-sm placeholder:text-white/20" />
-              <input type="email" placeholder="Your Email" className="w-full bg-transparent border-b border-white/20 py-2 md:py-4 outline-none focus:border-[#f4a100] transition-colors text-sm placeholder:text-white/20" />
-              <textarea placeholder="Your Message" rows={2} className="w-full bg-transparent border-b border-white/20 py-2 md:py-4 outline-none focus:border-[#f4a100] transition-colors resize-none text-sm placeholder:text-white/20"></textarea>
-              <button className="w-full py-4 md:py-5 bg-[#f4a100] text-[#1a1a1a] font-montserrat font-black tracking-[3px] uppercase hover:bg-white transition-colors duration-300 shadow-lg mt-4 text-xs md:text-base">
-                Submit Request
-              </button>
-            </form>
+            
+            <div className="mt-12 md:mt-20 pt-12 md:pt-16 border-t border-white/5 w-full">
+              <a 
+                href={`tel:${formattedPhone}`}
+                className="inline-block py-4 md:py-6 px-10 md:px-16 bg-[#f4a100] text-[#1a1a1a] font-montserrat font-black tracking-[3px] uppercase hover:bg-white transition-colors duration-300 shadow-lg text-xs md:text-base"
+              >
+                Book Your Appointment
+              </a>
+            </div>
           </div>
         </div>
       </section>
@@ -332,12 +295,14 @@ export const GeneratedWebsite: React.FC<GeneratedWebsiteProps> = ({ data, onBack
         <div className="bg-[#f4a100] text-[#1a1a1a] p-4 md:p-6 shadow-2xl rounded-sm border border-[#1a1a1a]/20 max-w-[220px] md:max-w-[280px]">
           <h5 className="font-montserrat font-black text-[10px] md:text-sm tracking-widest uppercase mb-1 md:mb-2">Claim Custom Barber Site</h5>
           <p className="text-[9px] md:text-[11px] font-bold uppercase mb-3 md:mb-4 opacity-90 leading-tight">Claim this website forever for only $10/month hosting.</p>
-          <button
-            onClick={handleClaimWebsite}
-            className="block w-full text-center py-2 bg-[#1a1a1a] text-[#f4a100] text-[9px] md:text-[10px] font-bold tracking-widest uppercase hover:bg-black transition-colors cursor-pointer"
+          <a 
+            href="https://buy.stripe.com/8x2bJ0eCo8yGgrE8Ym3cc05" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="block w-full text-center py-2 bg-[#1a1a1a] text-[#f4a100] text-[9px] md:text-[10px] font-bold tracking-widest uppercase hover:bg-black transition-colors"
           >
             GET FULL ACCESS
-          </button>
+          </a>
           <p className="text-[6px] md:text-[8px] mt-2 opacity-70 uppercase tracking-tighter text-center italic">
             The Prime Barber team can edit the site after purchase
           </p>
