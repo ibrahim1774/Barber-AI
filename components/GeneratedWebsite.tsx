@@ -21,6 +21,7 @@ export const GeneratedWebsite: React.FC<GeneratedWebsiteProps> = ({ data, onBack
     stripeLink?: string;
     error?: string;
   } | null>(null);
+  const STRIPE_LINK = 'https://buy.stripe.com/8x2bJ0eCo8yGgrE8Ym3cc05';
 
   // Handle text changes
   const handleTextChange = (path: string, value: string) => {
@@ -235,7 +236,7 @@ export const GeneratedWebsite: React.FC<GeneratedWebsiteProps> = ({ data, onBack
 
       setDeploymentResult({
         deploymentUrl: result.deploymentUrl,
-        stripeLink: result.stripeLink
+        stripeLink: result.stripeLink || STRIPE_LINK
       });
 
     } catch (error: any) {
@@ -414,8 +415,9 @@ export const GeneratedWebsite: React.FC<GeneratedWebsiteProps> = ({ data, onBack
     <div className="bg-[#0d0d0d] text-white overflow-hidden scroll-smooth pt-[40px] md:pt-[50px]">
       {/* Instructional Banner */}
       <div className="fixed top-0 left-0 w-full bg-[#cc0000] text-white py-2 md:py-3 px-4 z-[70] text-center shadow-lg">
-        <p className="text-[10px] md:text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2">
-          <span className="shrink-0">Text and images can be edited. Once ready, click Claim Site to start $10/month website hosting and launch your site.</span>
+        <p className="text-[10px] md:text-sm font-bold uppercase tracking-wider flex flex-col md:flex-row items-center justify-center gap-0 md:gap-2 leading-tight">
+          <span>Text and images can be edited. Once ready, click</span>
+          <span>Launch Website to start $10/month hosting and live site.</span>
         </p>
       </div>
 
@@ -475,7 +477,7 @@ export const GeneratedWebsite: React.FC<GeneratedWebsiteProps> = ({ data, onBack
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-black/70 bg-gradient-to-b from-black/60 via-transparent to-[#0d0d0d]"></div>
-          <ImageOverlay onImageUpload={(e) => handleImageChange('hero.imageUrl', e)} />
+          {/* Hero image is not replaceable per user request */}
         </div>
 
         <div className="relative z-10 text-center px-4 md:px-6 max-w-5xl -mt-20 md:mt-0">
@@ -522,7 +524,9 @@ export const GeneratedWebsite: React.FC<GeneratedWebsiteProps> = ({ data, onBack
           <div className="relative">
             <div className="flex items-center gap-3 mb-4 md:mb-6">
               <ScissorsIcon className="w-4 h-4 md:w-5 md:h-5 text-[#f4a100]" />
-              <span className="text-[#f4a100] text-[10px] md:text-xs font-bold tracking-[3px] md:tracking-[4px] uppercase font-montserrat">About Us</span>
+              <span className="text-[#f4a100] text-[10px] md:text-xs font-bold tracking-[3px] md:tracking-[4px] uppercase font-montserrat">
+                <EditableText text="About Us" onSave={() => { }} />
+              </span>
             </div>
             <h2 className="text-2xl md:text-5xl font-montserrat font-black text-white mb-6 md:mb-8 leading-tight uppercase tracking-[2px]">
               <EditableText text={siteData.about.heading} onSave={(val) => handleTextChange('about.heading', val)} />
@@ -582,9 +586,12 @@ export const GeneratedWebsite: React.FC<GeneratedWebsiteProps> = ({ data, onBack
             </div>
 
             <div className="lg:w-1/2 order-1 lg:order-2">
-              <h3 className="text-[#f4a100] text-xs font-bold tracking-[5px] uppercase mb-4">Master Barbers</h3>
+              <h3 className="text-[#f4a100] text-xs font-bold tracking-[5px] uppercase mb-4">
+                <EditableText text="Master Barbers" onSave={() => { }} />
+              </h3>
               <h2 className="text-3xl md:text-5xl font-montserrat font-black text-white leading-tight uppercase tracking-[2px] mb-8">
-                The Pinnacle of <br /> Professional Craftsmanship
+                <EditableText text="The Pinnacle of" onSave={() => { }} /> <br />
+                <EditableText text="Professional Craftsmanship" onSave={() => { }} />
               </h2>
               <div className="space-y-8">
                 <div className="flex items-start gap-6">
@@ -681,12 +688,16 @@ export const GeneratedWebsite: React.FC<GeneratedWebsiteProps> = ({ data, onBack
       <section id="contact-us" className="py-12 md:py-32 bg-[#0d0d0d] px-4 md:px-6">
         <div className="container mx-auto max-w-4xl shadow-2xl overflow-hidden bg-[#1a1a1a]">
           <div className="w-full p-8 md:p-20 flex flex-col items-center text-center bg-[#1a1a1a]">
-            <h2 className="text-2xl md:text-4xl font-montserrat font-black text-white mb-8 md:mb-12 uppercase tracking-[2px]">Visit Us</h2>
+            <h2 className="text-2xl md:text-4xl font-montserrat font-black text-white mb-8 md:mb-12 uppercase tracking-[2px]">
+              <EditableText text="Visit Us" onSave={() => { }} />
+            </h2>
             <div className="grid md:grid-cols-3 gap-8 md:gap-12 w-full">
               <div className="flex flex-col items-center gap-4">
                 <MapPinIcon className="w-8 h-8 text-[#f4a100]" />
                 <div>
-                  <h4 className="text-[#f4a100] font-bold text-[10px] md:text-xs tracking-[2px] mb-2 font-montserrat uppercase">Location</h4>
+                  <h4 className="text-[#f4a100] font-bold text-[10px] md:text-xs tracking-[2px] mb-2 font-montserrat uppercase">
+                    <EditableText text="Location" onSave={() => { }} />
+                  </h4>
                   <p className="text-[#cccccc] text-xs md:text-sm leading-relaxed">
                     <EditableText text={siteData.contact.address} onSave={(val) => handleTextChange('contact.address', val)} />
                   </p>
@@ -695,7 +706,9 @@ export const GeneratedWebsite: React.FC<GeneratedWebsiteProps> = ({ data, onBack
               <a href={`tel:${formattedPhone}`} className="flex flex-col items-center gap-4 group">
                 <PhoneIcon className="w-8 h-8 text-[#f4a100] group-hover:scale-110 transition-transform" />
                 <div>
-                  <h4 className="text-[#f4a100] font-bold text-[10px] md:text-xs tracking-[2px] mb-2 font-montserrat uppercase">Phone</h4>
+                  <h4 className="text-[#f4a100] font-bold text-[10px] md:text-xs tracking-[2px] mb-2 font-montserrat uppercase">
+                    <EditableText text="Phone" onSave={() => { }} />
+                  </h4>
                   <p className="text-[#cccccc] text-xs md:text-sm leading-relaxed group-hover:text-white transition-colors">
                     <EditableText text={siteData.phone} onSave={(val) => handleTextChange('phone', val)} />
                   </p>
@@ -704,7 +717,9 @@ export const GeneratedWebsite: React.FC<GeneratedWebsiteProps> = ({ data, onBack
               <div className="flex flex-col items-center gap-4">
                 <MailIcon className="w-8 h-8 text-[#f4a100]" />
                 <div>
-                  <h4 className="text-[#f4a100] font-bold text-[10px] md:text-xs tracking-[2px] mb-2 font-montserrat uppercase">Email</h4>
+                  <h4 className="text-[#f4a100] font-bold text-[10px] md:text-xs tracking-[2px] mb-2 font-montserrat uppercase">
+                    <EditableText text="Email" onSave={() => { }} />
+                  </h4>
                   <p className="text-[#cccccc] text-xs md:text-sm leading-relaxed">
                     <EditableText text={siteData.contact.email} onSave={(val) => handleTextChange('contact.email', val)} />
                   </p>
@@ -715,9 +730,9 @@ export const GeneratedWebsite: React.FC<GeneratedWebsiteProps> = ({ data, onBack
             <div className="mt-12 md:mt-20 pt-12 md:pt-16 border-t border-white/5 w-full">
               <a
                 href={`tel:${formattedPhone}`}
-                className="inline-block py-4 md:py-6 px-10 md:px-16 bg-[#f4a100] text-[#1a1a1a] font-montserrat font-black tracking-[3px] uppercase hover:bg-white transition-colors duration-300 shadow-lg text-xs md:text-base"
+                className="inline-block py-4 md:py-6 px-10 md:px-16 bg-[#f4a100] text-[#1a1a1a] font-montserrat font-black tracking-[3px] uppercase hover:bg-white transition-colors duration-300 shadow-lg text-xs md:text-base text-center"
               >
-                Book Your Appointment
+                <EditableText text="Book Your Appointment" onSave={() => { }} />
               </a>
             </div>
           </div>
@@ -810,9 +825,9 @@ export const GeneratedWebsite: React.FC<GeneratedWebsiteProps> = ({ data, onBack
               >
                 VIEW SITE
               </a>
-              {deploymentResult.stripeLink && (
+              {(deploymentResult.stripeLink || STRIPE_LINK) && (
                 <a
-                  href={deploymentResult.stripeLink}
+                  href={deploymentResult.stripeLink || STRIPE_LINK}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block w-full text-center py-2 bg-black text-[#f4a100] text-[9px] md:text-[10px] font-bold tracking-widest uppercase hover:bg-[#1a1a1a] transition-colors"
