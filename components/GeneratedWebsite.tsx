@@ -79,39 +79,65 @@ export const GeneratedWebsite: React.FC<GeneratedWebsiteProps> = ({ data, onBack
         }
       });
 
-      // Step 2: Upload images to GCS via backend (avoids CORS issues)
+      // Step 2: Upload images to GCS using signed URLs (client-side)
       const imageUrlMap: Record<string, string> = {};
 
       if (imagesToUpload.length > 0) {
-        console.log(`[Deploy] Uploading ${imagesToUpload.length} images to GCS via backend...`);
+        console.log(`[Deploy] Uploading ${imagesToUpload.length} images to GCS...`);
 
-        // Upload images through backend API to avoid CORS issues
-        // We'll send images in smaller chunks to avoid payload size limits
-        const chunkSize = 3; // Upload 3 images at a time
-        for (let i = 0; i < imagesToUpload.length; i += chunkSize) {
-          const chunk = imagesToUpload.slice(i, i + chunkSize);
-          
-          const uploadResponse = await fetch('/api/upload-images', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              siteId,
-              images: chunk,
-            }),
-          });
+        // Get signed URLs for all images
+        const filenames = imagesToUpload.map(img => img.filename);
+        const signedUrlsResponse = await fetch('/api/get-upload-urls', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ siteId, filenames }),
+        });
 
-          if (!uploadResponse.ok) {
-            const errorData = await uploadResponse.json().catch(() => ({ error: 'Upload failed' }));
-            throw new Error(errorData.error || `Failed to upload images chunk ${Math.floor(i / chunkSize) + 1}`);
-          }
-
-          const result = await uploadResponse.json();
-          Object.assign(imageUrlMap, result.imageUrls);
-
-          console.log(`[Deploy] Uploaded chunk ${Math.floor(i / chunkSize) + 1}/${Math.ceil(imagesToUpload.length / chunkSize)}`);
+        if (!signedUrlsResponse.ok) {
+          throw new Error('Failed to get signed URLs for image upload');
         }
+
+        const { urls } = await signedUrlsResponse.json();
+
+        // Upload each image to GCS using signed URLs
+        await Promise.all(
+          imagesToUpload.map(async (image, index) => {
+            const signedUrlData = urls.find((u: any) => u.filename === image.filename);
+            if (!signedUrlData) {
+              throw new Error(`No signed URL found for ${image.filename}`);
+            }
+
+            // Convert base64 data URL to blob
+            const base64Data = image.base64.split(',')[1] || image.base64;
+            const byteCharacters = atob(base64Data);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+              byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: 'image/jpeg' });
+
+            // Upload to GCS using signed URL
+            const uploadResponse = await fetch(signedUrlData.signedUrl, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'image/jpeg',
+              },
+              body: blob,
+            });
+
+            if (!uploadResponse.ok) {
+              throw new Error(`Failed to upload ${image.filename} to GCS`);
+            }
+
+            // Use the public URL from the response
+            imageUrlMap[image.key] = signedUrlData.publicUrl;
+
+            console.log(`[Deploy] ✓ Uploaded ${image.key} -> ${signedUrlData.publicUrl}`);
+          })
+        );
 
         console.log(`[Deploy] All ${imagesToUpload.length} images uploaded successfully`);
       }
