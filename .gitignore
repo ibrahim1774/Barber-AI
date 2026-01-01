@@ -27,3 +27,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+server.ts
+service-account.json
+
+package-backup.json

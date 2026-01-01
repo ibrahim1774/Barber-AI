@@ -88,7 +88,7 @@ export async function uploadToGCS(
     console.log(`[GCS Upload] File uploaded successfully: ${filePath}`);
 
     // Make the file publicly readable
-    await file.makePublic();
+    //await file.makePublic();
 
     console.log(`[GCS Upload] File made public: ${filePath}`);
 
