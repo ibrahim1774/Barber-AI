@@ -10,6 +10,7 @@ interface DeploymentRequest {
     filename: string;
     base64: string;
   }>;
+  imageUrls?: Record<string, string>; // Map of image keys to public URLs
 }
 
 export default async function handler(req: any, res: any) {
@@ -39,15 +40,22 @@ export default async function handler(req: any, res: any) {
     }
 
     console.log(`[Deploy Site] Starting deployment for siteId: ${body.siteId}`);
-    console.log(`[Deploy Site] Images to upload: ${body.images?.length || 0}`);
 
-    // Step 1: Upload images to Google Cloud Storage
-    const imageUrlMap: Record<string, string> = {};
+    // Step 1: Handle image URLs (either from client-side upload or server-side upload)
+    let imageUrlMap: Record<string, string> = {};
     const uploadedImages: Record<string, string> = {};
-    const uploadErrors: Array<{ key: string; error: string }> = [];
 
-    if (body.images && body.images.length > 0) {
-      console.log(`[Deploy Site] Uploading ${body.images.length} images to GCS...`);
+    if (body.imageUrls && Object.keys(body.imageUrls).length > 0) {
+      // Images were already uploaded client-side, use provided URLs
+      // Note: Files are already public due to bucket configuration (allUsers access)
+      console.log(`[Deploy Site] Using ${Object.keys(body.imageUrls).length} pre-uploaded image URLs`);
+      
+      imageUrlMap = body.imageUrls;
+      Object.assign(uploadedImages, body.imageUrls);
+    } else if (body.images && body.images.length > 0) {
+      // Fallback: Upload images server-side (for backward compatibility)
+      console.log(`[Deploy Site] Uploading ${body.images.length} images to GCS (server-side)...`);
+      const uploadErrors: Array<{ key: string; error: string }> = [];
 
       // Upload images sequentially to avoid overwhelming GCS
       for (const image of body.images) {
@@ -99,7 +107,7 @@ export default async function handler(req: any, res: any) {
         console.warn('[Deploy Site] Warning: All image uploads failed. Deployment will proceed with placeholder URLs.');
       }
     } else {
-      console.log('[Deploy Site] No images to upload');
+      console.log('[Deploy Site] No images to process');
     }
 
     // Step 2: Replace placeholders in HTML with actual URLs

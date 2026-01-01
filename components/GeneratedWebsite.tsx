@@ -47,12 +47,12 @@ export const GeneratedWebsite: React.FC<GeneratedWebsiteProps> = ({ data, onBack
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '');
 
-      // Prepare images array with placeholders
-      const images = [];
+      // Step 1: Prepare images array with keys and filenames
+      const imagesToUpload: Array<{ key: string; filename: string; base64: string }> = [];
 
       // Hero image
       if (data.hero.imageUrl) {
-        images.push({
+        imagesToUpload.push({
           key: 'hero',
           filename: 'hero.jpg',
           base64: data.hero.imageUrl
@@ -61,7 +61,7 @@ export const GeneratedWebsite: React.FC<GeneratedWebsiteProps> = ({ data, onBack
 
       // About image
       if (data.about.imageUrl) {
-        images.push({
+        imagesToUpload.push({
           key: 'about',
           filename: 'about.jpg',
           base64: data.about.imageUrl
@@ -71,7 +71,7 @@ export const GeneratedWebsite: React.FC<GeneratedWebsiteProps> = ({ data, onBack
       // Gallery images
       data.gallery.forEach((imageUrl, index) => {
         if (imageUrl) {
-          images.push({
+          imagesToUpload.push({
             key: `gallery${index}`,
             filename: `gallery-${index}.jpg`,
             base64: imageUrl
@@ -79,10 +79,73 @@ export const GeneratedWebsite: React.FC<GeneratedWebsiteProps> = ({ data, onBack
         }
       });
 
-      // Generate HTML with placeholders
+      // Step 2: Upload images to GCS using signed URLs (client-side)
+      const imageUrlMap: Record<string, string> = {};
+
+      if (imagesToUpload.length > 0) {
+        console.log(`[Deploy] Uploading ${imagesToUpload.length} images to GCS...`);
+
+        // Get signed URLs for all images
+        const filenames = imagesToUpload.map(img => img.filename);
+        const signedUrlsResponse = await fetch('/api/get-upload-urls', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ siteId, filenames }),
+        });
+
+        if (!signedUrlsResponse.ok) {
+          throw new Error('Failed to get signed URLs for image upload');
+        }
+
+        const { urls } = await signedUrlsResponse.json();
+
+        // Upload each image to GCS using signed URLs
+        await Promise.all(
+          imagesToUpload.map(async (image, index) => {
+            const signedUrlData = urls.find((u: any) => u.filename === image.filename);
+            if (!signedUrlData) {
+              throw new Error(`No signed URL found for ${image.filename}`);
+            }
+
+            // Convert base64 data URL to blob
+            const base64Data = image.base64.split(',')[1] || image.base64;
+            const byteCharacters = atob(base64Data);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+              byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: 'image/jpeg' });
+
+            // Upload to GCS using signed URL
+            const uploadResponse = await fetch(signedUrlData.signedUrl, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'image/jpeg',
+              },
+              body: blob,
+            });
+
+            if (!uploadResponse.ok) {
+              throw new Error(`Failed to upload ${image.filename} to GCS`);
+            }
+
+            // Use the public URL from the response
+            imageUrlMap[image.key] = signedUrlData.publicUrl;
+
+            console.log(`[Deploy] ✓ Uploaded ${image.key} -> ${signedUrlData.publicUrl}`);
+          })
+        );
+
+        console.log(`[Deploy] All ${imagesToUpload.length} images uploaded successfully`);
+      }
+
+      // Step 3: Generate HTML with placeholders (will be replaced on backend)
       const html = generateHTMLWithPlaceholders(data);
 
-      // Call deployment API
+      // Step 4: Call deployment API with only HTML/CSS and image URLs (no base64)
       const response = await fetch('/api/deploy-site', {
         method: 'POST',
         headers: {
@@ -91,11 +154,19 @@ export const GeneratedWebsite: React.FC<GeneratedWebsiteProps> = ({ data, onBack
         body: JSON.stringify({
           siteId,
           html,
-          images
+          imageUrls: imageUrlMap, // Send URLs instead of base64
         }),
       });
 
-      const result = await response.json();
+      // Handle non-JSON responses (like 413 errors)
+      let result;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        result = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(`Deployment failed: ${text || `HTTP ${response.status}`}`);
+      }
 
       if (!response.ok) {
         throw new Error(result.error || result.details || 'Deployment failed');
