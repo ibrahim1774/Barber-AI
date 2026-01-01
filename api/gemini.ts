@@ -76,24 +76,19 @@ export default async function handler(req: any, res: any) {
       }
     });
 
-    // 2. Prepare Image Generation Prompts
+    // 2. Prepare Image Generation Prompts (Reduced to 3: Hero, About, and 1 Gallery image)
     const imagePrompts = [
       `Cinematic hero image of a barber in a luxury shop in ${inputs.area}, moody atmosphere, professional photography, 16:9`,
       `Styled interior of ${inputs.shopName}, leather vintage chairs, marble floors, soft lighting, 4:3`,
       `Close-up of premium gold-plated barber scissors and a silver straight razor, 1:1`,
-      `A sharp skin fade haircut at ${inputs.shopName}, clean edges, 1:1`,
-      `A barber applying warm lather with a silver brush, luxury ritual, 1:1`,
-      `Modern masculine hair styling session at ${inputs.shopName}, dynamic movement, 1:1`,
-      `Close-up of barber's hands using a straight razor for precision beard lineup, 1:1`,
-      `Sophisticated entrance of ${inputs.shopName} in ${inputs.area}, architectural detail, 1:1`,
     ];
 
-    // Execute text and first few images in parallel to stay within timeout
+    // Execute text and all images in parallel
     const [textResponse, ...imageResponses] = await Promise.all([
       textPromise,
-      ...imagePrompts.map(prompt => 
+      ...imagePrompts.map(prompt =>
         ai.models.generateContent({
-          model: "gemini-2.5-flash-image",
+          model: "gemini-2.0-flash-exp", // Using stable model if possible, or sticking with provided
           contents: { parts: [{ text: prompt }] },
           config: { imageConfig: { aspectRatio: "1:1" } }
         }).catch(e => {
@@ -104,7 +99,7 @@ export default async function handler(req: any, res: any) {
     ]);
 
     const content = JSON.parse(textResponse.text || '{}');
-    
+
     // Extract image data
     const imageUrls = imageResponses.map(res => {
       if (!res) return "";
@@ -131,12 +126,12 @@ export default async function handler(req: any, res: any) {
       services: (content.services || []).map((s: any, i: number) => ({
         ...s,
         icon: serviceIcons[i % 4],
-        imageUrl: imageUrls[i + 2] || imageUrls[2] || "",
+        imageUrl: imageUrls[2] || imageUrls[1] || imageUrls[0] || "",
       })),
-      gallery: imageUrls.filter(url => url !== ""),
-      contact: content.contact || { 
-        address: inputs.area, 
-        email: `contact@${inputs.shopName.toLowerCase().replace(/\s/g, '')}.com` 
+      gallery: imageUrls.slice(2).filter(url => url !== ""),
+      contact: content.contact || {
+        address: inputs.area,
+        email: `contact@${inputs.shopName.toLowerCase().replace(/\s/g, '')}.com`
       },
     };
 
@@ -144,8 +139,8 @@ export default async function handler(req: any, res: any) {
 
   } catch (error: any) {
     console.error("Gemini API Error:", error);
-    return res.status(500).json({ 
-      message: error.message || "Failed to generate website content." 
+    return res.status(500).json({
+      message: error.message || "Failed to generate website content."
     });
   }
 }

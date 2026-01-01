@@ -76,7 +76,7 @@ export const GeneratedWebsite: React.FC<GeneratedWebsiteProps> = ({ data, onBack
     <div className={`absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer z-10 ${className}`}>
       <label className="cursor-pointer flex flex-col items-center gap-2">
         <CameraIcon className="w-8 h-8 text-white" />
-        <span className="text-white text-[10px] md:text-xs font-bold uppercase tracking-wider">Replace Image</span>
+        <span className="text-white text-[10px] md:text-xs font-bold uppercase tracking-wider text-center px-2">Replace An Image</span>
         <input type="file" className="hidden" accept="image/*" onChange={onImageUpload} />
       </label>
     </div>
@@ -350,9 +350,9 @@ export const GeneratedWebsite: React.FC<GeneratedWebsiteProps> = ({ data, onBack
   </section>
 
   <section class="bg-[#1a1a1a]">
-    <div class="grid grid-cols-1 md:grid-cols-3">
-      ${siteData.gallery.slice(0, 3).map((_, i) => `
-        <div class="aspect-square relative group overflow-hidden">
+    <div class="flex justify-center">
+      ${siteData.gallery.slice(0, 1).map((_, i) => `
+        <div class="aspect-square relative group overflow-hidden w-full max-w-2xl">
           <img src="{{gallery${i}}}" alt="Gallery ${i}" class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700">
         </div>
       `).join('')}
@@ -417,7 +417,7 @@ export const GeneratedWebsite: React.FC<GeneratedWebsiteProps> = ({ data, onBack
       <div className="fixed top-0 left-0 w-full bg-[#cc0000] text-white py-2 md:py-3 px-4 z-[70] text-center shadow-lg">
         <p className="text-[10px] md:text-sm font-bold uppercase tracking-wider flex flex-col md:flex-row items-center justify-center gap-0 md:gap-2 leading-tight">
           <span>Text and images can be edited. Once ready, click</span>
-          <span>Launch Website to start $10/month hosting and live site.</span>
+          <span>Claim Site to start $10/month website hosting and launch your site.</span>
         </p>
       </div>
 
@@ -674,9 +674,9 @@ export const GeneratedWebsite: React.FC<GeneratedWebsiteProps> = ({ data, onBack
 
       {/* Gallery Section */}
       <section className="bg-[#1a1a1a]">
-        <div className="grid grid-cols-1 md:grid-cols-3">
-          {siteData.gallery.slice(0, 3).map((img, i) => (
-            <div key={i} className="aspect-square relative group overflow-hidden">
+        <div className="flex justify-center px-4 md:px-0">
+          {siteData.gallery.slice(0, 1).map((img, i) => (
+            <div key={i} className="aspect-square relative group overflow-hidden w-full max-w-2xl">
               <img src={img} alt={`Gallery Style ${i}`} className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700" />
               <ImageOverlay onImageUpload={(e) => handleImageChange(`gallery.${i}`, e)} />
             </div>
@@ -789,7 +789,7 @@ export const GeneratedWebsite: React.FC<GeneratedWebsiteProps> = ({ data, onBack
                 disabled={isDeploying}
                 className="block w-full text-center py-2 bg-[#1a1a1a] text-[#f4a100] text-[9px] md:text-[10px] font-bold tracking-widest uppercase hover:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isDeploying ? 'DEPLOYING...' : 'LAUNCH WEBSITE'}
+                {isDeploying ? 'DEPLOYING...' : 'CLAIM SITE'}
               </button>
               <p className="text-[6px] md:text-[8px] mt-2 opacity-70 uppercase tracking-tighter text-center italic">
                 The Prime Barber team can edit the site after purchase
@@ -842,6 +842,6 @@ export const GeneratedWebsite: React.FC<GeneratedWebsiteProps> = ({ data, onBack
           )}
         </div>
       </div>
-    </div>
+    </div >
   );
 };
