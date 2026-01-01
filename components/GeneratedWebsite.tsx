@@ -13,6 +13,12 @@ interface GeneratedWebsiteProps {
 
 export const GeneratedWebsite: React.FC<GeneratedWebsiteProps> = ({ data, onBack }) => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isDeploying, setIsDeploying] = useState(false);
+  const [deploymentResult, setDeploymentResult] = useState<{
+    deploymentUrl?: string;
+    stripeLink?: string;
+    error?: string;
+  } | null>(null);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -28,6 +34,246 @@ export const GeneratedWebsite: React.FC<GeneratedWebsiteProps> = ({ data, onBack
       case 'face': return <FaceIcon className="w-10 h-10 md:w-12 md:h-12 text-[#f4a100]" />;
       default: return <ScissorsIcon className="w-10 h-10 md:w-12 md:h-12 text-[#f4a100]" />;
     }
+  };
+
+  const handleDeployWebsite = async () => {
+    setIsDeploying(true);
+    setDeploymentResult(null);
+
+    try {
+      // Generate unique site ID from shop name
+      const siteId = data.shopName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+
+      // Prepare images array with placeholders
+      const images = [];
+
+      // Hero image
+      if (data.hero.imageUrl) {
+        images.push({
+          key: 'hero',
+          filename: 'hero.jpg',
+          base64: data.hero.imageUrl
+        });
+      }
+
+      // About image
+      if (data.about.imageUrl) {
+        images.push({
+          key: 'about',
+          filename: 'about.jpg',
+          base64: data.about.imageUrl
+        });
+      }
+
+      // Gallery images
+      data.gallery.forEach((imageUrl, index) => {
+        if (imageUrl) {
+          images.push({
+            key: `gallery${index}`,
+            filename: `gallery-${index}.jpg`,
+            base64: imageUrl
+          });
+        }
+      });
+
+      // Generate HTML with placeholders
+      const html = generateHTMLWithPlaceholders(data);
+
+      // Call deployment API
+      const response = await fetch('/api/deploy-site', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          siteId,
+          html,
+          images
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || result.details || 'Deployment failed');
+      }
+
+      setDeploymentResult({
+        deploymentUrl: result.deploymentUrl,
+        stripeLink: result.stripeLink
+      });
+
+    } catch (error: any) {
+      console.error('Deployment error:', error);
+      setDeploymentResult({
+        error: error.message || 'Failed to deploy website. Please try again.'
+      });
+    } finally {
+      setIsDeploying(false);
+    }
+  };
+
+  const generateHTMLWithPlaceholders = (siteData: WebsiteData): string => {
+    const formattedPhone = siteData.phone.replace(/\s+/g, '');
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${siteData.shopName} - Premium Barbershop in ${siteData.area}</title>
+  <meta name="description" content="Premium grooming services at ${siteData.shopName} in ${siteData.area}. Expert barbers, luxury experience.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    * { font-family: 'Montserrat', sans-serif; }
+    html { scroll-behavior: smooth; }
+  </style>
+</head>
+<body class="bg-[#0d0d0d] text-white overflow-x-hidden">
+  <header id="header" class="fixed top-0 left-0 w-full z-50 transition-all duration-300 bg-black/20 py-5 md:py-8">
+    <div class="container mx-auto flex justify-between items-center px-4 md:px-6">
+      <div class="flex items-center gap-4 md:gap-8">
+        <div class="flex items-center gap-3 md:gap-5">
+          <svg class="w-8 h-8 md:w-12 md:h-12 text-[#f4a100]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 6l12 12M6 18L18 6"></path>
+          </svg>
+          <span class="font-montserrat font-black text-lg md:text-3xl lg:text-4xl tracking-[1px] md:tracking-[2px] uppercase whitespace-nowrap">
+            ${siteData.shopName.split(' ')[0]} <span class="text-[#f4a100]">${siteData.shopName.split(' ').slice(1).join(' ')}</span>
+          </span>
+        </div>
+        <a href="tel:${formattedPhone}" class="flex items-center gap-2 md:gap-4 text-[#f4a100] border-l-2 border-white/20 pl-4 md:pl-8 hover:text-white transition-colors">
+          <svg class="w-5 h-5 md:w-7 md:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+          </svg>
+          <span class="text-sm md:text-xl lg:text-2xl font-bold tracking-tight">${siteData.phone}</span>
+        </a>
+      </div>
+      <nav class="hidden lg:flex items-center gap-10">
+        <a href="#home" class="text-[12px] font-montserrat font-bold tracking-[2px] hover:text-[#f4a100] transition-colors">HOME</a>
+        <a href="#services" class="text-[12px] font-montserrat font-bold tracking-[2px] hover:text-[#f4a100] transition-colors">SERVICES</a>
+        <a href="#contact" class="text-[12px] font-montserrat font-bold tracking-[2px] hover:text-[#f4a100] transition-colors">CONTACT</a>
+      </nav>
+    </div>
+  </header>
+
+  <section id="home" class="relative h-screen flex flex-col justify-center items-center overflow-hidden">
+    <div class="absolute inset-0 z-0">
+      <img src="{{hero}}" alt="Main Hero" class="w-full h-full object-cover">
+      <div class="absolute inset-0 bg-black/70 bg-gradient-to-b from-black/60 via-transparent to-[#0d0d0d]"></div>
+    </div>
+    <div class="relative z-10 text-center px-4 md:px-6 max-w-5xl -mt-20 md:mt-0">
+      <p class="text-[#f4a100] font-montserrat font-bold text-[8px] md:text-sm tracking-[3px] md:tracking-[5px] uppercase mb-3 md:mb-6 opacity-90">
+        ${siteData.hero.tagline}
+      </p>
+      <h1 class="text-3xl md:text-6xl lg:text-7xl font-montserrat font-black text-white leading-tight uppercase tracking-[1px] md:tracking-[4px] mb-8 md:mb-12">
+        ${siteData.hero.heading}
+      </h1>
+      <a href="tel:${formattedPhone}" class="inline-flex items-center gap-3 border-2 border-[#f4a100] text-[#f4a100] px-6 py-4 md:px-12 md:py-6 font-montserrat font-black tracking-[2px] uppercase hover:bg-[#f4a100] hover:text-[#1a1a1a] transition-all duration-300 group shadow-lg text-xs md:text-base">
+        <span>Call Now: ${siteData.phone}</span>
+      </a>
+    </div>
+  </section>
+
+  <section id="about-us" class="py-12 md:py-32 px-6 bg-[#1a1a1a]">
+    <div class="container mx-auto grid lg:grid-cols-2 gap-10 md:gap-20 items-center">
+      <div class="relative">
+        <h2 class="text-2xl md:text-5xl font-montserrat font-black text-white mb-6 md:mb-8 leading-tight uppercase tracking-[2px]">
+          ${siteData.about.heading}
+        </h2>
+        <div class="space-y-4 md:space-y-6 text-[#cccccc] font-light leading-relaxed text-sm md:text-base">
+          ${siteData.about.description.map(p => `<p>${p}</p>`).join('')}
+        </div>
+      </div>
+      <div class="relative group mt-6 lg:mt-0">
+        <img src="{{about}}" alt="Barber Shop Atmosphere" class="w-full grayscale hover:grayscale-0 transition-all duration-700 shadow-2xl">
+      </div>
+    </div>
+  </section>
+
+  <section id="services" class="py-12 md:py-32 bg-[#0d0d0d] px-6">
+    <div class="container mx-auto">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8 max-w-6xl mx-auto">
+        ${siteData.services.map(service => `
+          <div class="group border-2 border-[#f4a100] p-6 md:p-12 text-center flex flex-col items-center hover:bg-[#1a1a1a] transition-all duration-500">
+            <div class="mb-4 md:mb-8 transform group-hover:scale-110 transition-transform duration-300">
+              <svg class="w-10 h-10 md:w-12 md:h-12 text-[#f4a100]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6l12 12M6 18L18 6"></path>
+              </svg>
+            </div>
+            <h3 class="font-montserrat font-black text-white text-base md:text-xl tracking-[1.5px] mb-2 uppercase">${service.title}</h3>
+            <p class="text-[#f4a100] text-[9px] md:text-[11px] font-bold tracking-[2px] mb-3 md:mb-4 uppercase">${service.subtitle}</p>
+            <p class="text-[#999999] text-xs md:text-sm leading-relaxed">${service.description}</p>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-[#1a1a1a]">
+    <div class="grid grid-cols-2 lg:grid-cols-4">
+      ${siteData.gallery.slice(0, 8).map((_, i) => `
+        <div class="aspect-square relative group overflow-hidden">
+          <img src="{{gallery${i}}}" alt="Gallery ${i}" class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700">
+        </div>
+      `).join('')}
+    </div>
+  </section>
+
+  <section id="contact" class="py-12 md:py-32 bg-[#0d0d0d] px-4 md:px-6">
+    <div class="container mx-auto max-w-6xl bg-[#1a1a1a] p-8 md:p-20">
+      <h2 class="text-2xl md:text-4xl font-montserrat font-black text-white mb-8 md:mb-12 uppercase tracking-[2px]">Contact Us</h2>
+      <div class="space-y-6 md:space-y-10">
+        <div>
+          <h4 class="text-[#f4a100] font-bold text-[10px] md:text-xs tracking-[2px] mb-1 md:mb-2 font-montserrat">ADDRESS</h4>
+          <p class="text-[#cccccc] text-xs md:text-sm leading-relaxed">${siteData.contact.address}</p>
+        </div>
+        <div>
+          <h4 class="text-[#f4a100] font-bold text-[10px] md:text-xs tracking-[2px] mb-1 md:mb-2 font-montserrat">PHONE</h4>
+          <p class="text-[#cccccc] text-xs md:text-sm leading-relaxed">${siteData.phone}</p>
+        </div>
+        <div>
+          <h4 class="text-[#f4a100] font-bold text-[10px] md:text-xs tracking-[2px] mb-1 md:mb-2 font-montserrat">EMAIL</h4>
+          <p class="text-[#cccccc] text-xs md:text-sm leading-relaxed">${siteData.contact.email}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="py-12 md:py-20 bg-[#0a0a0a] border-t border-white/5 text-center">
+    <div class="container mx-auto px-6">
+      <span class="font-montserrat font-black text-sm md:text-2xl tracking-[2px] md:tracking-[4px] uppercase">
+        ${siteData.shopName.split(' ')[0]} <span class="text-[#f4a100]">${siteData.shopName.split(' ').slice(1).join(' ')}</span>
+      </span>
+      <p class="text-[#666666] text-[8px] md:text-xs uppercase tracking-[2px] md:tracking-[4px] mt-8 mb-12">
+        Premium Grooming Excellence in ${siteData.area}
+      </p>
+      <div class="pt-8 border-t border-white/5 text-[#444444] text-[8px] uppercase tracking-[2px]">
+        Copyright &copy; 2025 ${siteData.shopName}. Built by Prime Barber AI.
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    window.addEventListener('scroll', () => {
+      const header = document.getElementById('header');
+      if (window.scrollY > 20) {
+        header.classList.remove('bg-black/20', 'py-5', 'md:py-8');
+        header.classList.add('bg-[#1a1a1a]/95', 'backdrop-blur-md', 'shadow-xl', 'py-3', 'md:py-4');
+      } else {
+        header.classList.add('bg-black/20', 'py-5', 'md:py-8');
+        header.classList.remove('bg-[#1a1a1a]/95', 'backdrop-blur-md', 'shadow-xl', 'py-3', 'md:py-4');
+      }
+    });
+  </script>
+</body>
+</html>`;
   };
 
   const formattedPhone = data.phone.replace(/\s+/g, '');
@@ -290,22 +536,74 @@ export const GeneratedWebsite: React.FC<GeneratedWebsiteProps> = ({ data, onBack
         </div>
       </footer>
 
-      {/* Stripe Payment Popup */}
+      {/* Deployment Popup */}
       <div className="fixed bottom-4 right-4 md:bottom-8 md:right-8 z-[60] scale-[0.85] md:scale-100 origin-bottom-right">
         <div className="bg-[#f4a100] text-[#1a1a1a] p-4 md:p-6 shadow-2xl rounded-sm border border-[#1a1a1a]/20 max-w-[220px] md:max-w-[280px]">
-          <h5 className="font-montserrat font-black text-[10px] md:text-sm tracking-widest uppercase mb-1 md:mb-2">Claim Custom Barber Site</h5>
-          <p className="text-[9px] md:text-[11px] font-bold uppercase mb-3 md:mb-4 opacity-90 leading-tight">Claim this website forever for only $10/month hosting.</p>
-          <a 
-            href="https://buy.stripe.com/8x2bJ0eCo8yGgrE8Ym3cc05" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="block w-full text-center py-2 bg-[#1a1a1a] text-[#f4a100] text-[9px] md:text-[10px] font-bold tracking-widest uppercase hover:bg-black transition-colors"
-          >
-            GET FULL ACCESS
-          </a>
-          <p className="text-[6px] md:text-[8px] mt-2 opacity-70 uppercase tracking-tighter text-center italic">
-            The Prime Barber team can edit the site after purchase
-          </p>
+          <h5 className="font-montserrat font-black text-[10px] md:text-sm tracking-widest uppercase mb-1 md:mb-2">
+            {deploymentResult?.deploymentUrl ? 'Site Deployed!' : 'Deploy Your Website'}
+          </h5>
+
+          {!deploymentResult && (
+            <>
+              <p className="text-[9px] md:text-[11px] font-bold uppercase mb-3 md:mb-4 opacity-90 leading-tight">
+                Deploy your custom barbershop website and get full access.
+              </p>
+              <button
+                onClick={handleDeployWebsite}
+                disabled={isDeploying}
+                className="block w-full text-center py-2 bg-[#1a1a1a] text-[#f4a100] text-[9px] md:text-[10px] font-bold tracking-widest uppercase hover:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isDeploying ? 'DEPLOYING...' : 'DEPLOY WEBSITE'}
+              </button>
+              <p className="text-[6px] md:text-[8px] mt-2 opacity-70 uppercase tracking-tighter text-center italic">
+                The Prime Barber team can edit the site after purchase
+              </p>
+            </>
+          )}
+
+          {deploymentResult?.error && (
+            <>
+              <p className="text-[9px] md:text-[11px] font-bold mb-3 md:mb-4 text-red-800 leading-tight">
+                {deploymentResult.error}
+              </p>
+              <button
+                onClick={handleDeployWebsite}
+                disabled={isDeploying}
+                className="block w-full text-center py-2 bg-[#1a1a1a] text-[#f4a100] text-[9px] md:text-[10px] font-bold tracking-widest uppercase hover:bg-black transition-colors"
+              >
+                TRY AGAIN
+              </button>
+            </>
+          )}
+
+          {deploymentResult?.deploymentUrl && (
+            <>
+              <p className="text-[9px] md:text-[11px] font-bold uppercase mb-2 md:mb-3 opacity-90 leading-tight">
+                Your website is live!
+              </p>
+              <a
+                href={deploymentResult.deploymentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full text-center py-2 bg-[#1a1a1a] text-[#f4a100] text-[9px] md:text-[10px] font-bold tracking-widest uppercase hover:bg-black transition-colors mb-2"
+              >
+                VIEW SITE
+              </a>
+              {deploymentResult.stripeLink && (
+                <a
+                  href={deploymentResult.stripeLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full text-center py-2 bg-black text-[#f4a100] text-[9px] md:text-[10px] font-bold tracking-widest uppercase hover:bg-[#1a1a1a] transition-colors"
+                >
+                  GET FULL ACCESS
+                </a>
+              )}
+              <p className="text-[6px] md:text-[8px] mt-2 opacity-70 uppercase tracking-tighter text-center italic">
+                Click to claim ownership for $10/month
+              </p>
+            </>
+          )}
         </div>
       </div>
     </div>
